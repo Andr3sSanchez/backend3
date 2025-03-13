@@ -1,72 +1,115 @@
-import bcrypt from 'bcrypt';
-import { usersService } from "../services/index.js";
-import UserDTO from "../dto/User.dto.js";
+import { generateMockPets, generateMockUsers } from "../mocks/mocking.js";
+import usersService from "../services/usersService.js";
+import petsService from "../services/petsService.js";
 
-// Módulo para generar usuarios de manera mockeada
 const generateMockingUsers = async (req, res) => {
-    const users = [];
-    
-    // Generar 50 usuarios mockeados
-    for (let i = 0; i < 50; i++) {
-        const role = Math.random() > 0.5 ? 'user' : 'admin';
-        const password = await bcrypt.hash('coder123', 10); // Encriptando la contraseña
+    try {
+        const users = await generateMockUsers(50);
+        const savedUsers = [];
 
-        const user = {
-            first_name: `User${i}`,
-            last_name: `Lastname${i}`,
-            email: `user${i}@example.com`,
-            password,
-            role,
-            pets: [],
-        };
+        for (let user of users) {
+            const existingUser = await usersService.findByEmail(user.email);
+            if (existingUser) {
+                console.log(
+                    `Email ${user.email} ya está en uso, saltando este usuario.`
+                );
+                continue;
+            }
 
-        // Guardamos el usuario en la base de datos
-        const result = await usersService.save(user);
-        users.push(result);
+            const savedUser = await usersService.save(user);
+            savedUsers.push(savedUser);
+        }
+
+        res.send({ status: "success", users: savedUsers });
+    } catch (error) {
+        console.error("Error generando usuarios:", error);
+        res
+            .status(500)
+            .send({ status: "error", error: "Failed to generate mock users" });
     }
-
-    res.send({ status: 'success', payload: users });
 };
 
-// Endpoint para generar datos personalizados
+const generateMockingPets = async (req, res) => {
+    try {
+        const numPets = parseInt(req.query.num) || 100;
+
+        if (isNaN(numPets) || numPets <= 0) {
+            return res.status(400).send({
+                status: "error",
+                error: "El número de mascotas debe ser un entero positivo",
+            });
+        }
+
+        const mockPets = generateMockPets(numPets);
+
+        await petsService.createMany(mockPets);
+        console.log("Mascotas guardadas en la BD");
+
+        res.send({ status: "success", message: `${numPets} mock pets generated` });
+    } catch (error) {
+        console.error("Error generando mascotas:", error);
+        res
+            .status(500)
+            .send({ status: "error", error: "Failed to generate mock pets" });
+    }
+};
+
 const generateData = async (req, res) => {
-    const { users, pets } = req.body;
+    try {
+        const { users, pets } = req.body;
 
-    const generatedUsers = [];
-    for (let i = 0; i < users; i++) {
-        const password = await bcrypt.hash('coder123', 10);
-        const role = Math.random() > 0.5 ? 'user' : 'admin';
+        if (!users || isNaN(users) || users <= 0) {
+            return res.status(400).send({
+                status: "error",
+                error:
+                    "Invalid number of users. Please provide a valid positive number.",
+            });
+        }
 
-        const user = {
-            first_name: `GeneratedUser${i}`,
-            last_name: `GeneratedLastname${i}`,
-            email: `generateduser${i}@example.com`,
-            password,
-            role,
-            pets: [],
-        };
+        if (!pets || isNaN(pets) || pets <= 0) {
+            return res.status(400).send({
+                status: "error",
+                error:
+                    "Invalid number of pets. Please provide a valid positive number.",
+            });
+        }
 
-        const result = await usersService.save(user);
-        generatedUsers.push(result);
+        const generatedUsers = await generateMockUsers(parseInt(users));
+        const generatedPets = generateMockPets(parseInt(pets));
+
+        const savedUsers = [];
+        for (let user of generatedUsers) {
+            const existingUser = await usersService.findByEmail(user.email);
+            if (existingUser) {
+                console.log(
+                    `Email ${user.email} ya está en uso, saltando este usuario.`
+                );
+                continue;
+            }
+
+            const savedUser = await usersService.save(user);
+            savedUsers.push(savedUser);
+        }
+
+        const savedPets = [];
+        for (let pet of generatedPets) {
+            const savedPet = await petsService.save(pet);
+            savedPets.push(savedPet);
+        }
+
+        res.send({
+            status: "success",
+            users: savedUsers,
+            pets: savedPets,
+        });
+    } catch (error) {
+        console.error("Error generando usuarios y mascotas:", error);
+        res.status(500).send({ status: "error", error: "Failed to generate data" });
     }
-
-    const generatedPets = [];
-    for (let i = 0; i < pets; i++) {
-        const pet = {
-            name: `GeneratedPet${i}`,
-            specie: 'Dog',
-            birthDate: new Date(),
-            adopted: false,
-        };
-
-        const result = await petsService.save(pet);
-        generatedPets.push(result);
-    }
-
-    res.send({ status: 'success', users: generatedUsers, pets: generatedPets });
 };
 
 export default {
     generateMockingUsers,
+    generateMockingPets,
     generateData,
 };
