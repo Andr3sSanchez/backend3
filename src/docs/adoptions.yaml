@@ -1,0 +1,63 @@
+tags:
+  - name: Adoptions
+    description: Endpoints para gestionar adopciones
+
+paths:
+  /adoptions:
+    get:
+      tags:
+        - Adoptions
+      summary: Obtener todas las adopciones
+      responses:
+        '200':
+          description: Lista de adopciones obtenida exitosamente
+        '500':
+          description: Error del servidor
+
+  /adoptions/{aid}:
+    get:
+      tags:
+        - Adoptions
+      summary: Obtener una adopción por ID
+      parameters:
+        - in: path
+          name: aid
+          required: true
+          schema:
+            type: string
+          description: ID de la adopción a buscar
+      responses:
+        '200':
+          description: Adopción encontrada exitosamente
+        '404':
+          description: Adopción no encontrada
+        '500':
+          description: Error del servidor
+
+  /adoptions/{uid}/{pid}:
+    post:
+      tags:
+        - Adoptions
+      summary: Registrar una adopción
+      parameters:
+        - in: path
+          name: uid
+          required: true
+          schema:
+            type: string
+          description: ID del usuario que adopta
+        - in: path
+          name: pid
+          required: true
+          schema:
+            type: string
+          description: ID de la mascota a adoptar
+      responses:
+        '200':
+          description: Adopción registrada exitosamente
+        '400':
+          description: Datos inválidos o mascota ya adoptada
+        '404':
+          description: Usuario o mascota no encontrada
+        '500':
+          description: Error del servidor

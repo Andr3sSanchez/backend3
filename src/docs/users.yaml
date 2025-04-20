@@ -1,0 +1,88 @@
+tags:
+  - name: Users
+    description: Operaciones relacionadas con usuarios
+
+paths:
+  /users:
+    get:
+      summary: Obtener todos los usuarios
+      tags:
+        - Users
+      responses:
+        "200":
+          description: Lista de usuarios obtenida con éxito
+        "500":
+          description: Error interno al obtener los usuarios
+
+  /users/{uid}:
+    get:
+      summary: Obtener un usuario por ID
+      tags:
+        - Users
+      parameters:
+        - name: uid
+          in: path
+          required: true
+          description: ID del usuario
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Usuario obtenido con éxito
+        "404":
+          description: Usuario no encontrado
+        "500":
+          description: Error interno al obtener el usuario
+
+    put:
+      summary: Actualizar un usuario por ID
+      tags:
+        - Users
+      parameters:
+        - name: uid
+          in: path
+          required: true
+          description: ID del usuario
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                first_name:
+                  type: string
+                last_name:
+                  type: string
+                email:
+                  type: string
+                role:
+                  type: string
+      responses:
+        "200":
+          description: Usuario actualizado con éxito
+        "404":
+          description: Usuario no encontrado
+        "500":
+          description: Error interno al actualizar el usuario
+
+    delete:
+      summary: Eliminar un usuario por ID
+      tags:
+        - Users
+      parameters:
+        - name: uid
+          in: path
+          required: true
+          description: ID del usuario
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Usuario eliminado con éxito
+        "404":
+          description: Usuario no encontrado
+        "500":
+          description: Error interno al eliminar el usuario

@@ -1,0 +1,97 @@
+tags:
+  - name: Pets
+    description: Endpoints para gestión de mascotas
+
+paths:
+  /pets:
+    get:
+      tags:
+        - Pets
+      summary: Obtener todas las mascotas
+      responses:
+        '200':
+          description: Lista de mascotas obtenida exitosamente
+        '500':
+          description: Error del servidor
+
+    post:
+      tags:
+        - Pets
+      summary: Crear una nueva mascota
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - specie
+              properties:
+                name:
+                  type: string
+                specie:
+                  type: string
+                birthDate:
+                  type: string
+                  format: date
+      responses:
+        '200':
+          description: Mascota creada exitosamente
+        '400':
+          description: Datos inválidos
+        '500':
+          description: Error del servidor
+
+  /pets/{pid}:
+    put:
+      tags:
+        - Pets
+      summary: Actualizar una mascota
+      parameters:
+        - in: path
+          name: pid
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                specie:
+                  type: string
+                birthDate:
+                  type: string
+                  format: date
+      responses:
+        '200':
+          description: Mascota actualizada exitosamente
+        '400':
+          description: Datos inválidos
+        '404':
+          description: Mascota no encontrada
+        '500':
+          description: Error del servidor
+
+    delete:
+      tags:
+        - Pets
+      summary: Eliminar una mascota
+      parameters:
+        - in: path
+          name: pid
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Mascota eliminada exitosamente
+        '404':
+          description: Mascota no encontrada
+        '500':
+          description: Error del servidor

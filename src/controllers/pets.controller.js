@@ -16,12 +16,13 @@ const createPet = async (req, res, next) => {
   try {
     const { name, specie, birthDate } = req.body;
 
-    
     if (!name || !specie || !birthDate) {
-      throw new CustomError(400, "Incomplete values"); 
+      return res.status(400).json({
+        status: "error",
+        error: "Missing required fields",
+      });
     }
 
-    
     const pet = PetDTO.getPetInputFrom({ name, specie, birthDate });
     const result = await petsService.create(pet);
 

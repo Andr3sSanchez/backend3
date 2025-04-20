@@ -1,0 +1,83 @@
+openapi: 3.0.1
+info:
+  title: Adoptme API - Sessions
+  version: 1.0.0
+  description: Endpoints relacionados con la autenticación y gestión de sesiones de usuarios.
+
+tags:
+  - name: Sessions
+    description: Gestión de login, logout y perfil de usuarios.
+
+paths:
+  /sessions/register:
+    post:
+      summary: Registro de un nuevo usuario
+      tags:
+        - Sessions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - first_name
+                - last_name
+                - email
+                - password
+              properties:
+                first_name:
+                  type: string
+                  example: Andrés
+                last_name:
+                  type: string
+                  example: Sánchez
+                email:
+                  type: string
+                  example: andres@example.com
+                password:
+                  type: string
+                  example: coder123
+      responses:
+        '200':
+          description: Usuario registrado exitosamente
+        '400':
+          description: Error de validación o usuario ya existente
+  
+  /sessions/login:
+    post:
+      summary: Login de usuario
+      tags:
+        - Sessions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  example: user@example.com
+                password:
+                  type: string
+                  example: coder123
+      responses:
+        '200':
+          description: Usuario logueado correctamente
+        '400':
+          description: Credenciales inválidas
+
+  /sessions/current:
+    get:
+      summary: Obtener la sesión actual del usuario autenticado
+      tags:
+        - Sessions
+      responses:
+        '200':
+          description: Usuario autenticado
+        '400':
+          description: Usuario no autenticado
