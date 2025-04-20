@@ -98,11 +98,29 @@ const unprotectedCurrent = async (req, res) => {
     }
 };
 
+const logout = async (req, res) => {
+    try {
+        const cookie = req.cookies['coderCookie'];
+        const decoded = jwt.verify(cookie, 'tokenSecretJWT');
+        const user = await usersService.getUserByEmail(decoded.email);
+        if (user) {
+            user.last_connection = new Date();
+            await user.save();
+        }
+        res.clearCookie('coderCookie').send({ status: "success", message: "Logged out" });
+    } catch (error) {
+        res.status(500).send({ status: "error", error: "Logout failed" });
+    }
+};
+
+
+
 export default {
     current,
     login,
     register,
     current,
     unprotectedLogin,
-    unprotectedCurrent
+    unprotectedCurrent,
+    logout
 };
