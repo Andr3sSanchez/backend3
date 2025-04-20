@@ -87,10 +87,27 @@ const createPetWithImage = async (req, res, next) => {
   }
 };
 
+const getPetById = async (req, res, next) => {
+  try {
+    const petId = req.params.pid;
+    const pet = await petsService.getById(petId);
+
+    if (!pet) {
+      return res.status(404).json({ status: "error", message: "Pet not found" });
+    }
+
+    res.status(200).json({ status: "success", payload: pet });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 export default {
   getAllPets,
   createPet,
   updatePet,
   deletePet,
   createPetWithImage,
+  getPetById,
 };

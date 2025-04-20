@@ -12,6 +12,10 @@ export default class GenericRepository {
         return this.dao.getBy(params);
     }
 
+    getById(id) {
+        return this.dao.getById(id);
+    }
+
     create = (doc) =>{
         return this.dao.save(doc);
     }
@@ -22,5 +26,9 @@ export default class GenericRepository {
 
     delete = (id) =>{
         return this.dao.delete(id);
+    }
+
+    createMany(docs) {
+        return this.dao.createMany(docs);
     }
 }

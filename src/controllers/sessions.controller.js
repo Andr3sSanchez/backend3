@@ -57,6 +57,9 @@ const login = async (req, res) => {
     const token = jwt.sign(userDto, 'tokenSecretJWT', { expiresIn: "1h" });
 
     res.cookie('coderCookie', token, { maxAge: 3600000 }).send({ status: "success", message: "Logged in" });
+    user.last_connection = new Date();
+await user.save();
+
 };
 
 const current = async (req, res) => {

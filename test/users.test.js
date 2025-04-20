@@ -1,62 +1,54 @@
 import chai from 'chai';
-import chaiHttp from 'chai-http';
-import app from '../app'; // Asegúrate de que esta ruta apunte al archivo correcto
-import mongoose from 'mongoose';
-import User from '../models/user'; // Ajusta según el nombre del modelo de usuario
+import supertest from 'supertest';
+import app from '../src/app.js';
+import { connectMemoryDB, closeMemoryDB } from './setupMongoMemory.js';
+import UserModel from '../src/dao/models/User.js';
 
-chai.use(chaiHttp);
-const { expect } = chai;
+const expect = chai.expect;
+const request = supertest(app);
 
-describe('Usuarios API', () => {
-  before(async () => {
-    // Conectamos a la base de datos de pruebas
-    await mongoose.connect('mongodb+srv://andressanchez447:jbvXmn9QWK3DDiOS@cluster0.6u1ge.mongodb.net/');
-  });
-
+describe('🔥 Users API (in‑memory DB)', () => {
+  before(connectMemoryDB);
   after(async () => {
-    // Limpiar la base de datos después de los tests
-    await User.deleteMany();
-    await mongoose.disconnect();
+    await UserModel.deleteMany({});
+    await closeMemoryDB();
   });
 
-  it('Debe crear un nuevo usuario', async () => {
-    const newUser = {
-      email: 'test@example.com',
-      password: 'password123',
-    };
+  let createdId;
 
-    const res = await chai.request(app)
-      .post('/api/sessions/register') // Ajusta según tu ruta
-      .send(newUser);
-
-    expect(res.status).to.equal(201);
-    expect(res.body).to.have.property('message').eql('Usuario creado correctamente');
+  it('POST  /api/sessions/register →  should create user', async () => {
+    const res = await request.post('/api/sessions/register').send({
+      first_name: 'Ana',
+      last_name: 'Test',
+      email: 'ana@test.com',
+      password: '123456'
+    });
+    expect(res.status).to.be.oneOf([200,201]);
+    expect(res.body).to.have.property('status','success');
+    createdId = res.body.payload; // según tu controller, payload = _id
   });
 
-  it('Debe obtener todos los usuarios', async () => {
-    const res = await chai.request(app).get('/api/users');
-
+  it('GET   /api/users         →  should list users', async () => {
+    const res = await request.get('/api/users');
     expect(res.status).to.equal(200);
-    expect(res.body).to.be.an('array');
+    expect(res.body.payload).to.be.an('array').and.have.length(1);
   });
 
-  it('Debe obtener un usuario por ID', async () => {
-    const user = await User.create({ email: 'findme@example.com', password: 'password123' });
-
-    const res = await chai.request(app)
-      .get(`/api/users/${user._id}`);
-
+  it('GET   /api/users/:uid    →  should get user by id', async () => {
+    const res = await request.get(`/api/users/${createdId}`);
     expect(res.status).to.equal(200);
-    expect(res.body).to.have.property('_id').eql(user._id.toString());
+    expect(res.body.payload).to.include({ email: 'ana@test.com' });
   });
 
-  it('Debe eliminar un usuario', async () => {
-    const user = await User.create({ email: 'delete@example.com', password: 'password123' });
-
-    const res = await chai.request(app)
-      .delete(`/api/users/${user._id}`);
-
+  it('PUT   /api/users/:uid    →  should update user', async () => {
+    const res = await request.put(`/api/users/${createdId}`).send({ last_name: 'Updated' });
     expect(res.status).to.equal(200);
-    expect(res.body).to.have.property('message').eql('Usuario eliminado correctamente');
+    expect(res.body).to.have.property('message','User updated');
+  });
+
+  it('DELETE /api/users/:uid    →  should delete user', async () => {
+    const res = await request.delete(`/api/users/${createdId}`);
+    expect(res.status).to.equal(200);
+    expect(res.body).to.have.property('message','User deleted');
   });
 });

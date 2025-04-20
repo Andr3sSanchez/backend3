@@ -1,62 +1,55 @@
 import chai from 'chai';
-import chaiHttp from 'chai-http';
-import app from '../app'; // Asegúrate de que esta ruta apunte al archivo correcto
-import Pet from '../models/pet'; // Ajusta según el nombre del modelo de mascotas
+import supertest from 'supertest';
+import app from '../src/app.js';
+import { connectMemoryDB, closeMemoryDB } from './setupMongoMemory.js';
+import PetModel from '../src/dao/models/Pet.js';
 
-chai.use(chaiHttp);
-const { expect } = chai;
+const expect = chai.expect;
+const request = supertest(app);
 
-describe('Mascotas API', () => {
-  before(async () => {
-    // Conectamos a la base de datos de pruebas
-    await mongoose.connect('mongodb+srv://andressanchez447:jbvXmn9QWK3DDiOS@cluster0.6u1ge.mongodb.net/');
-  });
-
+describe('🐶 Pets API (in‑memory DB)', () => {
+  before(connectMemoryDB);
   after(async () => {
-    // Limpiar la base de datos después de los tests
-    await Pet.deleteMany();
-    await mongoose.disconnect();
+    await PetModel.deleteMany({});
+    await closeMemoryDB();
   });
 
-  it('Debe crear una nueva mascota', async () => {
-    const newPet = {
+  let petId;
+
+  it('POST  /api/pets         →  should create pet', async () => {
+    const res = await request.post('/api/pets').send({
       name: 'Rex',
-      breed: 'Labrador',
-      age: 3,
-    };
-
-    const res = await chai.request(app)
-      .post('/api/pets')
-      .send(newPet);
-
-    expect(res.status).to.equal(201);
-    expect(res.body).to.have.property('name').eql('Rex');
+      specie: 'Dog',
+      birthDate: '2020-01-01'
+    });
+    expect(res.status).to.equal(200);
+    expect(res.body).to.have.property('status','success');
+    petId = res.body.payload && res.body.payload._id;
+expect(petId).to.exist;
+console.log('🐾 Created pet ID:', petId);
   });
 
-  it('Debe obtener todas las mascotas', async () => {
-    const res = await chai.request(app).get('/api/pets');
-
+  it('GET   /api/pets         →  should list pets', async () => {
+    const res = await request.get('/api/pets');
     expect(res.status).to.equal(200);
-    expect(res.body).to.be.an('array');
+    expect(res.body.payload).to.be.an('array').and.have.length(1);
   });
 
-  it('Debe obtener una mascota por ID', async () => {
-    const pet = await Pet.create({ name: 'Bella', breed: 'Bulldog', age: 4 });
-
-    const res = await chai.request(app)
-      .get(`/api/pets/${pet._id}`);
-
+  it('GET   /api/pets/:pid     →  should get pet by id', async () => {
+    const res = await request.get(`/api/pets/${petId}`);
     expect(res.status).to.equal(200);
-    expect(res.body).to.have.property('_id').eql(pet._id.toString());
+    expect(res.body.payload).to.include({ name: 'Rex', specie: 'Dog' });
   });
 
-  it('Debe eliminar una mascota', async () => {
-    const pet = await Pet.create({ name: 'Lucky', breed: 'Poodle', age: 2 });
-
-    const res = await chai.request(app)
-      .delete(`/api/pets/${pet._id}`);
-
+  it('PUT   /api/pets/:pid     →  should update pet', async () => {
+    const res = await request.put(`/api/pets/${petId}`).send({ name: 'RexUpdated' });
     expect(res.status).to.equal(200);
-    expect(res.body).to.have.property('message').eql('Mascota eliminada correctamente');
+    expect(res.body).to.have.property('message','Pet updated');
+  });
+
+  it('DELETE /api/pets/:pid     →  should delete pet', async () => {
+    const res = await request.delete(`/api/pets/${petId}`);
+    expect(res.status).to.equal(200);
+    expect(res.body).to.have.property('message','Pet deleted');
   });
 });

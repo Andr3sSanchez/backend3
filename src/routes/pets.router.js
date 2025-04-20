@@ -8,6 +8,8 @@ router.get("/", petsController.getAllPets);
 
 router.post("/", petsController.createPet);
 
+router.get('/:pid', petsController.getPetById);
+
 router.post(
     "/withimage",
     uploader.single("image"),
