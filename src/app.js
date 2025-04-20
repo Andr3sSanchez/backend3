@@ -10,8 +10,13 @@ import mocksRouter from './routes/mocks.router.js';
 import errorHandler from './utils/errorHandler.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import __dirname from './utils/index.js';
 
 const app = express();
+
+
 
 app.use(express.json());
 app.use(cookieParser());
@@ -22,6 +27,8 @@ app.use('/api/pets', petsRouter);
 app.use('/api/adoptions', adoptionsRouter);
 app.use('/api/sessions', sessionsRouter);
 app.use('/api/mocks', mocksRouter);
+app.use('/public', express.static(path.join(__dirname, 'public')));
+
 
 const swaggerOptions = {
     definition: {
@@ -43,6 +50,7 @@ const swaggerOptions = {
 
 const swaggerSpec = swaggerJSDoc(swaggerOptions)
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 
 app.use(errorHandler);
 

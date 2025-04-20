@@ -1,4 +1,5 @@
 import { adoptionsService, petsService, usersService } from "../services/index.js";
+import mongoose from "mongoose";
 
 const getAllAdoptions = async (req, res, next) => {
   try {
@@ -12,6 +13,11 @@ const getAllAdoptions = async (req, res, next) => {
 const getAdoption = async (req, res, next) => {
   try {
     const adoptionId = req.params.aid;
+
+    if (!mongoose.Types.ObjectId.isValid(adoptionId)) {
+      return res.status(404).send({ status: "error", error: "Invalid adoption ID" });
+    }
+
     const adoption = await adoptionsService.getBy({ _id: adoptionId });
 
     if (!adoption) {
@@ -27,6 +33,14 @@ const getAdoption = async (req, res, next) => {
 const createAdoption = async (req, res, next) => {
   try {
     const { uid, pid } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(uid)) {
+      return res.status(404).send({ status: "error", error: "Invalid user ID" });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(pid)) {
+      return res.status(404).send({ status: "error", error: "Invalid pet ID" });
+    }
 
     const user = await usersService.getUserById(uid);
     if (!user) {
@@ -52,6 +66,7 @@ const createAdoption = async (req, res, next) => {
     next(error);
   }
 };
+
 
 export default {
   createAdoption,
