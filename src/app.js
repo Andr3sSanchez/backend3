@@ -1,5 +1,4 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import cookieParser from 'cookie-parser';
 import bodyParser from 'body-parser';
 import usersRouter from './routes/users.router.js';
@@ -11,49 +10,54 @@ import errorHandler from './utils/errorHandler.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJSDoc from 'swagger-jsdoc';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import __dirname from './utils/index.js';
+import logger from './config/logger.js';
 
 const app = express();
-
-
 
 app.use(express.json());
 app.use(cookieParser());
 app.use(bodyParser.json());
 
+// Middleware para loggear todas las peticiones HTTP
+app.use((req, res, next) => {
+  logger.http(`${req.method} ${req.url}`);
+  next();
+});
+
+// Rutas
 app.use('/api/users', usersRouter);
 app.use('/api/pets', petsRouter);
 app.use('/api/adoptions', adoptionsRouter);
 app.use('/api/sessions', sessionsRouter);
 app.use('/api/mocks', mocksRouter);
+
+// Archivos estáticos
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
-
+// Swagger
 const swaggerOptions = {
-    definition: {
-      openapi: '3.0.0',
-      info: {
-        title: 'Adoptme API',
-        version: '1.0.0',
-        description: 'API para gestión de usuarios, mascotas, sesiones y adopciones',
-      },
-      servers: [
-        {
-          url: 'http://localhost:8080/api/',
-          description: 'Servidor local',
-        },
-      ],
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Adoptme API',
+      version: '1.0.0',
+      description: 'API para gestión de usuarios, mascotas, sesiones y adopciones',
     },
-    apis: ['./src/docs/*.yaml'], // Archivos donde se escribirán los comentarios Swagger
-  }
+    servers: [
+      {
+        url: 'http://localhost:8080/api/',
+        description: 'Servidor local',
+      },
+    ],
+  },
+  apis: ['./src/docs/*.yaml'],
+};
 
-const swaggerSpec = swaggerJSDoc(swaggerOptions)
+const swaggerSpec = swaggerJSDoc(swaggerOptions);
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-
+// Middleware de manejo de errores
 app.use(errorHandler);
 
-
-
-  export default app;
+export default app;

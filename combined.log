@@ -1,0 +1,10 @@
+{
+  message: 'Usuario registrado exitosamente: ana@test.com',
+  level: 'info',
+  timestamp: '2025-04-21T03:10:43.135Z'
+}
+{
+  message: 'Login exitoso: ana@test.com',
+  level: 'info',
+  timestamp: '2025-04-21T03:10:43.230Z'
+}

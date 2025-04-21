@@ -2,25 +2,25 @@ import { usersService } from "../services/index.js";
 import { createHash, passwordValidation } from "../utils/index.js";
 import jwt from 'jsonwebtoken';
 import UserDTO from '../dto/User.dto.js';
+import logger from '../config/logger.js';
 
 const register = async (req, res) => {
     try {
         const { first_name, last_name, email, password } = req.body;
 
-        // Validación de campos requeridos
         if (!first_name) return res.status(400).send({ status: "error", error: "First name is required" });
         if (!last_name) return res.status(400).send({ status: "error", error: "Last name is required" });
         if (!email) return res.status(400).send({ status: "error", error: "Email is required" });
         if (!password) return res.status(400).send({ status: "error", error: "Password is required" });
 
-        // Verificar si el usuario ya existe
         const exists = await usersService.getUserByEmail(email);
-        if (exists) return res.status(400).send({ status: "error", error: "User already exists" });
+        if (exists) {
+            logger.warn(`Intento de registro con email ya existente: ${email}`);
+            return res.status(400).send({ status: "error", error: "User already exists" });
+        }
 
-        // Encriptar contraseña
         const hashedPassword = await createHash(password);
 
-        // Crear el objeto de usuario
         const user = {
             first_name,
             last_name,
@@ -28,14 +28,12 @@ const register = async (req, res) => {
             password: hashedPassword
         };
 
-        // Crear el usuario en la base de datos
-        let result = await usersService.create(user);
-        console.log(result);
-        
-        // Enviar la respuesta
+        const result = await usersService.create(user);
+        logger.info(`Usuario registrado exitosamente: ${email}`);
+
         res.status(200).send({ status: "success", payload: result._id });
     } catch (error) {
-        console.error(error);
+        logger.error(`Error en registro: ${error.message}`);
         res.status(500).send({ status: "error", error: "An unexpected error occurred" });
     }
 };
@@ -43,23 +41,34 @@ const register = async (req, res) => {
 const login = async (req, res) => {
     const { email, password } = req.body;
 
-    // Validación de campos requeridos
     if (!email) return res.status(400).send({ status: "error", error: "Email is required" });
     if (!password) return res.status(400).send({ status: "error", error: "Password is required" });
 
-    const user = await usersService.getUserByEmail(email);
-    if (!user) return res.status(404).send({ status: "error", error: "User doesn't exist" });
+    try {
+        const user = await usersService.getUserByEmail(email);
+        if (!user) {
+            logger.warn(`Intento de login con email no registrado: ${email}`);
+            return res.status(404).send({ status: "error", error: "User doesn't exist" });
+        }
 
-    const isValidPassword = await passwordValidation(user, password);
-    if (!isValidPassword) return res.status(400).send({ status: "error", error: "Incorrect password" });
+        const isValidPassword = await passwordValidation(user, password);
+        if (!isValidPassword) {
+            logger.warn(`Contraseña incorrecta en login para usuario: ${email}`);
+            return res.status(400).send({ status: "error", error: "Incorrect password" });
+        }
 
-    const userDto = UserDTO.getUserTokenFrom(user);
-    const token = jwt.sign(userDto, 'tokenSecretJWT', { expiresIn: "1h" });
+        const userDto = UserDTO.getUserTokenFrom(user);
+        const token = jwt.sign(userDto, 'tokenSecretJWT', { expiresIn: "1h" });
 
-    res.cookie('coderCookie', token, { maxAge: 3600000 }).send({ status: "success", message: "Logged in" });
-    user.last_connection = new Date();
-await user.save();
+        user.last_connection = new Date();
+        await user.save();
 
+        logger.info(`Login exitoso: ${email}`);
+        res.cookie('coderCookie', token, { maxAge: 3600000 }).send({ status: "success", message: "Logged in" });
+    } catch (error) {
+        logger.error(`Error en login: ${error.message}`);
+        res.status(500).send({ status: "error", error: "Login failed" });
+    }
 };
 
 const current = async (req, res) => {
@@ -106,20 +115,19 @@ const logout = async (req, res) => {
         if (user) {
             user.last_connection = new Date();
             await user.save();
+            logger.info(`Logout exitoso: ${decoded.email}`);
         }
         res.clearCookie('coderCookie').send({ status: "success", message: "Logged out" });
     } catch (error) {
+        logger.error(`Error en logout: ${error.message}`);
         res.status(500).send({ status: "error", error: "Logout failed" });
     }
 };
-
-
 
 export default {
     current,
     login,
     register,
-    current,
     unprotectedLogin,
     unprotectedCurrent,
     logout
